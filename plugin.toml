@@ -1,0 +1,11 @@
+schema = 1
+id = "tern-bigquery"
+name = "BigQuery"
+version = "0.1.0"
+description = "Browse BigQuery datasets, tables, schemas and preview rows in a native Tern block."
+host = "host.luau"
+styles = ["browser.css"]
+
+[[blocks]]
+id = "browser"
+title = "BigQuery"
