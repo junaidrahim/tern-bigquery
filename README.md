@@ -14,15 +14,32 @@ The browser can show these resources:
 - Table properties and schema fields.
 - Table data, with 50 rows on each preview page.
 
+The top of the browser shows the path to the current resource, its name, and its type.
+The path contains buttons for earlier levels.
+Resource lists show an icon, the ID, the friendly name, and the type or location of each resource.
+Views, materialized views, and external tables have their own icons.
+
+The schema screen starts with a summary of the table properties.
+The summary shows the row count, the logical and physical size, the location,
+and the creation, modification, and expiry times in UTC.
+It also shows partitioning and clustering when the table has them.
+Sizes use binary units, for example 1.6 GB.
+For a view or materialized view, the screen also shows its SQL definition.
+
 The schema grid shows all fields, including nested fields.
 The grid has four columns: Field, Type, Mode, and Description.
+Nested fields are indented below their parent field and show the complete path.
+Each type family has its own badge color.
 Long field names and descriptions can use more than one line.
 
 The preview grid keeps all columns in schema order.
 It also shows fields that occur only in the returned data.
-Missing values show as `NULL`.
+Numeric columns align to the right.
+Missing values show as `NULL` in muted italics.
 Nested values show as JSON text.
 Both grids have horizontal and vertical scroll controls.
+
+The bar at the bottom shows the keys for the current screen.
 
 The browser can copy a table name, a SQL example, or the current preview page as JSON.
 It saves the selected project when the block stops.
@@ -75,14 +92,16 @@ tern plugin link .
 ### Open a resource
 
 1. Click a row to select a resource.
-2. Click **Open selected**.
+2. Click **Open selected** at the bottom right.
 
 A double-click on a row also opens the resource.
 The resource path at the top contains buttons for earlier levels.
+**Back** at the bottom returns to the previous level.
+If a project, dataset, or table list is empty, the browser says so and offers the next step.
 
 ### Open a project by ID
 
-1. Click **Open project…**.
+1. Click **Open project…** at the top right.
 2. Enter the project ID.
 3. Click **Open**.
 
@@ -98,7 +117,8 @@ The list changes as you enter text.
 The search uses resource IDs, names, and types.
 It ignores letter case.
 All search terms must match.
-The count shows the number of matches and the number of loaded resources.
+Without search terms, the count shows the number of loaded resources.
+With search terms, it shows the number of matches and the number of loaded resources.
 
 Click **Clear** to remove the search terms.
 The browser also clears the search terms when you open another level.
@@ -107,15 +127,18 @@ The browser also clears the search terms when you open another level.
 
 1. Open a table or view.
 2. Select the **Schema** tab.
-3. Scroll horizontally to see all four columns.
-4. Scroll vertically to see more fields.
+3. Read the table properties above the grid.
+4. Scroll horizontally to see all four columns in a narrow pane.
+5. Scroll vertically to see more fields.
+
+Click **Copy name** or **Copy SQL** at the top right to copy the table name or a SQL example.
 
 ### Read the preview
 
 1. Open a table.
 2. Select the **Preview** tab.
 3. Scroll horizontally to see more columns.
-4. Click a row number to open the row inspector.
+4. Click a row number in the **#** column to open the row inspector.
 
 The row inspector shows the complete value of each field.
 Click **Close inspector** to close it.
@@ -157,16 +180,20 @@ It does not replace an existing value of `CLOUDSDK_PYTHON`.
 
 ## Problems
 
+When a request fails, the browser shows the `bq` message and, for common failures, a suggested action.
+Click **Try again** in the message to send the request again.
+
 | Problem | Action |
 | --- | --- |
-| Expired credentials | Run `gcloud auth login` in a shell. Then click **Refresh**. |
+| Expired credentials | Run `gcloud auth login` in a shell. Then click **Try again** or **Refresh**. |
 | Missing `bq` | Install Google Cloud CLI on the pane host. |
 | Missing `gcloud` | Make sure that `gcloud` is in the same directory as `bq`, or in the host `PATH`. |
 | Python error | Set `CLOUDSDK_PYTHON` to a Python interpreter that your Google Cloud CLI supports. |
-| Request timeout | Click **Refresh** to try again. |
+| Request timeout | Click **Try again**. |
 | Missing project | Use **Open project…** to enter its ID. |
 
 Each request has a 30-second timeout.
+While a request runs, the browser shows the `bq` command that it sent.
 
 ## Limits
 
@@ -192,13 +219,13 @@ Each request has a 30-second timeout.
 
 The tests use the production block with a simulated Tern environment.
 They check navigation, search, text changes, command arguments, and errors.
-They also check all schema columns, wide previews, null values, and nested fields.
+They also check all schema columns, wide previews, null values, nested fields,
+human-readable table properties, and empty resource lists.
 The tests do not connect to Google Cloud.
 
 ## Planned functions
 
 - Favorites and more pages for resource lists.
-- More table properties, including partition and clustering data.
 - A SQL editor with dry runs, a byte limit, and query job controls.
 - Local SQL files and selected schema data for agents.
 

@@ -38,6 +38,24 @@ local function hasArg(arg)
 	return false
 end
 local function key(s, name) definition.key(s, { name = name }) end
+-- Text of a text node, whether it holds a plain string or styled spans.
+local function flat(n)
+	local a = n.p.a
+	if type(a) == "string" then return a end
+	if a.t then return a.t end
+	local out = ""
+	for _, span in a do out ..= if type(span) == "string" then span else span.t end
+	return out
+end
+local function find(n, wanted)
+	if type(n) ~= "table" then return nil end
+	if n.p and n.p.key == wanted then return n end
+	for _, child in n.c or {} do
+		local hit = find(child, wanted)
+		if hit then return hit end
+	end
+	return nil
+end
 local s = definition.init(cx, {}, nil)
 assert(hasArg("--projects=true"))
 finish({ { id = "test-project" } })
@@ -49,10 +67,15 @@ assert(hasArg("test-project:analytics"))
 finish({ { tableReference = { tableId = "events" }, type = "TABLE" } })
 key(s, "enter")
 assert(hasArg("show") and hasArg("test-project:analytics.events"))
-finish({ schema = { fields = { { name = "user", type = "RECORD", fields = { { name = "id", type = "STRING" } } } } } })
+finish({ type = "TABLE", numRows = "164656", numBytes = "6432064", creationTime = "1457975805856",
+	schema = { fields = { { name = "user", type = "RECORD", fields = { { name = "id", type = "STRING" } } } } } })
 local view = definition.view(s)
-local schemaGrid = view.main.c[#view.main.c].c[3]
-assert(schemaGrid.c[3].c[1].p.a == "user.id", "Nested schema paths must render")
+local schemaGrid = find(view.main, "schema-grid")
+assert(flat(schemaGrid.c[3].c[1]) == "user.id", "Nested schema paths must render")
+local stats = {}
+for _, tile in find(view.main, "properties").c do stats[flat(tile.c[1])] = flat(tile.c[2]) end
+assert(stats.Rows == "164,656" and stats["Logical size"] == "6.1 MB" and stats.Created == "2016-03-14 17:16 UTC",
+	"Table properties are human-readable")
 key(s, "y")
 assert(copied == "test-project.analytics.events")
 key(s, "v")
@@ -140,6 +163,7 @@ assert(native.filter == "one", "Select-all and replacement must work")
 definition.event(native, {ev = "activate", id = "main.objects", item = "main.objects.one"})
 assert(native.project == "one", "Virtual row activation opens the selected resource")
 finish({})
+assert(find(definition.view(native).main, "empty"), "An empty project explains itself instead of showing a blank list")
 key(native, "/")
 definition.key(native, {name = "paste", text = "😀é"})
 key(native, "backspace")
@@ -163,9 +187,9 @@ local grid = body.c[2]
 assert(grid.k == "div" and grid.p.class == "bq-grid-scroll")
 assert(#grid.c[1].c == 37, "All 35 schema fields, extra field and row number must render")
 assert(grid.c[1].c[2].p.a == "field_1" and grid.c[1].c[36].p.a == "field_35", "Preserve schema column order")
-assert(grid.c[2].c[36].p.a == "last", "Far-right values must render")
-assert(grid.c[2].c[3].p.a == "NULL", "Render schema fields absent from the row")
-assert(grid.c[2].c[37].p.a == "discovered", "Keep unexpected returned fields")
+assert(flat(grid.c[2].c[36]) == "last", "Far-right values must render")
+assert(flat(grid.c[2].c[3]) == "NULL", "Render schema fields absent from the row")
+assert(flat(grid.c[2].c[37]) == "discovered", "Keep unexpected returned fields")
 definition.event(wide, {ev = "action", act = "inspect", value = "1"})
 local inspectedBody = definition.view(wide).main.c
 inspectedBody = inspectedBody[#inspectedBody]
@@ -189,13 +213,11 @@ for i = 1, 80 do
 end
 finish({schema = {fields = manyFields}})
 schemaState.cx.cols = 20
-local schemaContent = definition.view(schemaState).main.c
-schemaContent = schemaContent[#schemaContent]
-local allFields = schemaContent.c[3]
-assert(allFields.k == "div" and allFields.p.class == "bq-grid-scroll")
+local allFields = find(definition.view(schemaState).main, "schema-grid")
+assert(allFields.k == "div" and string.find(allFields.p.class, "bq-grid-scroll", 1, true))
 assert(#allFields.c == 81, "Every schema field remains rendered in a narrow pane")
 for _, row in allFields.c do assert(#row.c == 4, "All four schema columns must remain present") end
 assert(allFields.c[1].c[4].p.a == "Description")
-assert(allFields.c[81].c[1].p.a == "field_80")
-assert(allFields.c[81].c[4].p.a == manyFields[80].description, "Descriptions must remain complete")
+assert(flat(allFields.c[81].c[1]) == "field_80")
+assert(flat(allFields.c[81].c[4]) == manyFields[80].description, "Descriptions must remain complete")
 print("PASS: narrow schema grid renders all fields and four columns with complete descriptions")
